@@ -1,3 +1,3 @@
 name,set,get,set-mixed,get-mixed,del
-badger/fsync,test,593,681210,320,3417,379
-leveldb/fsync,test,221,1179326,72,1215942,66375
+badger/fsync,test,3740,629090,2148,9458,2055
+leveldb/fsync,test,197,2096628,79,2224995,123061

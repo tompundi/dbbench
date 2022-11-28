@@ -13,7 +13,7 @@ import (
 	"sync/atomic"
 	"time"
 
-	"github.com/smallnest/kvbench"
+	tdb "github.com/tompundi/testdb/testdb"
 )
 
 var (
@@ -65,7 +65,7 @@ func main() {
 }
 
 // test batch writes
-func testBatchWrite(name string, store kvbench.Store) {
+func testBatchWrite(name string, store tdb.Store) {
 	var wg sync.WaitGroup
 	start := time.Now()
 	ctx, cancel := context.WithTimeout(context.Background(), *duration)
@@ -107,7 +107,7 @@ func testBatchWrite(name string, store kvbench.Store) {
 }
 
 // test get
-func testGet(name string, store kvbench.Store) {
+func testGet(name string, store tdb.Store) {
 	var wg sync.WaitGroup
 	wg.Add(*c)
 
@@ -150,7 +150,7 @@ func testGet(name string, store kvbench.Store) {
 }
 
 // test multiple get/one set
-func testGetSet(name string, store kvbench.Store) {
+func testGetSet(name string, store tdb.Store) {
 	var wg sync.WaitGroup
 	wg.Add(*c)
 
@@ -217,7 +217,7 @@ func testGetSet(name string, store kvbench.Store) {
 	fmt.Printf("%s getmixed rate: %d op/s, mean: %d ns, took: %d s\n", name, int64(n)*1e6/(d/1e3), d/int64((n)*(*c)), int(dur.Seconds()))
 }
 
-func testSet(name string, store kvbench.Store) {
+func testSet(name string, store tdb.Store) {
 	var wg sync.WaitGroup
 	wg.Add(*c)
 
@@ -256,7 +256,7 @@ func testSet(name string, store kvbench.Store) {
 	fmt.Printf("%s set rate: %d op/s, mean: %d ns, took: %d s\n", name, int64(n)*1e6/(d/1e3), d/int64((n)*(*c)), int(dur.Seconds()))
 }
 
-func testDelete(name string, store kvbench.Store) {
+func testDelete(name string, store tdb.Store) {
 	var wg sync.WaitGroup
 	wg.Add(*c)
 
@@ -303,8 +303,8 @@ func genKey(i uint64) []byte {
 	return r
 }
 
-func getStore(s string, fsync bool, path string) (kvbench.Store, string, error) {
-	var store kvbench.Store
+func getStore(s string, fsync bool, path string) (tdb.Store, string, error) {
+	var store tdb.Store
 	var err error
 	switch s {
 	default:
@@ -313,12 +313,12 @@ func getStore(s string, fsync bool, path string) (kvbench.Store, string, error) 
 		if path == "" {
 			path = "leveldb.db"
 		}
-		store, err = kvbench.NewLevelDBStore(path, fsync)
+		store, err = tdb.NewLevelDBStore(path, fsync)
 	case "badger":
 		if path == "" {
 			path = "badger.db"
 		}
-		store, err = kvbench.NewBadgerStore(path, fsync)
+		store, err = tdb.NewBadgerStore(path, fsync)
 	}
 
 	return store, path, err

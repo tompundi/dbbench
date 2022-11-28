@@ -1,4 +1,54 @@
-main.go:16:2: found packages kvbench (badgerstore.go) and main (main.go) in /Users/pundix006/Desktop/GitHub/testTool
-main.go:16:2: found packages kvbench (badgerstore.go) and main (main.go) in /Users/pundix006/Desktop/GitHub/testTool
-main.go:16:2: found packages kvbench (badgerstore.go) and main (main.go) in /Users/pundix006/Desktop/GitHub/testTool
-main.go:16:2: found packages kvbench (badgerstore.go) and main (main.go) in /Users/pundix006/Desktop/GitHub/testTool
+duration=5s, c=4 size=256
+badger 2022/11/28 18:50:34 INFO: All 0 tables opened in 0s
+badger 2022/11/28 18:50:34 INFO: Discard stats nextEmptySlot: 0
+badger 2022/11/28 18:50:34 INFO: Set nextTxnTs to 0
+badger/nofsync batch write test inserted: 1788000 entries; took: 5.008649188s s
+badger/nofsync set rate: 120221 op/s, mean: 2079 ns, took: 5 s
+badger/nofsync get rate: 513087 op/s, mean: 487 ns, took: 5 s
+badger/nofsync setmixed rate: 20884 op/s, mean: 47882 ns, took: 5 s
+badger/nofsync getmixed rate: 342766 op/s, mean: 729 ns, took: 5 s
+badger/nofsync del rate: 148501 op/s, mean: 1683 ns, took: 5 s
+badger 2022/11/28 18:50:59 INFO: Lifetime L0 stalled for: 0s
+badger 2022/11/28 18:50:59 INFO: 
+Level 0 [ ]: NumTables: 03. Size: 19 MiB of 0 B. Score: 0.00->0.00 StaleData: 0 B Target FileSize: 64 MiB
+Level 1 [ ]: NumTables: 00. Size: 0 B of 10 MiB. Score: 0.00->0.00 StaleData: 0 B Target FileSize: 2.0 MiB
+Level 2 [ ]: NumTables: 00. Size: 0 B of 10 MiB. Score: 0.00->0.00 StaleData: 0 B Target FileSize: 2.0 MiB
+Level 3 [ ]: NumTables: 00. Size: 0 B of 10 MiB. Score: 0.00->0.00 StaleData: 0 B Target FileSize: 2.0 MiB
+Level 4 [ ]: NumTables: 00. Size: 0 B of 10 MiB. Score: 0.00->0.00 StaleData: 0 B Target FileSize: 2.0 MiB
+Level 5 [B]: NumTables: 12. Size: 43 MiB of 46 MiB. Score: 0.00->0.00 StaleData: 0 B Target FileSize: 4.0 MiB
+Level 6 [ ]: NumTables: 124. Size: 460 MiB of 460 MiB. Score: 0.00->0.00 StaleData: 0 B Target FileSize: 8.0 MiB
+Level Done
+duration=5s, c=4 size=256
+leveldb/nofsync batch write test inserted: 799000 entries; took: 6.053185488s s
+leveldb/nofsync set rate: 74907 op/s, mean: 3337 ns, took: 5 s
+leveldb/nofsync get rate: 672569 op/s, mean: 371 ns, took: 5 s
+leveldb/nofsync setmixed rate: 32761 op/s, mean: 30523 ns, took: 5 s
+leveldb/nofsync getmixed rate: 271828 op/s, mean: 919 ns, took: 5 s
+leveldb/nofsync del rate: 326543 op/s, mean: 765 ns, took: 5 s
+duration=5s, c=4 size=256
+badger 2022/11/28 18:51:28 INFO: All 0 tables opened in 0s
+badger 2022/11/28 18:51:28 INFO: Discard stats nextEmptySlot: 0
+badger 2022/11/28 18:51:28 INFO: Set nextTxnTs to 0
+badger/fsync batch write test inserted: 891000 entries; took: 5.00622613s s
+badger/fsync set rate: 3740 op/s, mean: 66835 ns, took: 5 s
+badger/fsync get rate: 629090 op/s, mean: 397 ns, took: 5 s
+badger/fsync setmixed rate: 2148 op/s, mean: 465344 ns, took: 5 s
+badger/fsync getmixed rate: 9458 op/s, mean: 26430 ns, took: 5 s
+badger/fsync del rate: 2055 op/s, mean: 121635 ns, took: 5 s
+badger 2022/11/28 18:51:53 INFO: Lifetime L0 stalled for: 0s
+badger 2022/11/28 18:51:54 INFO: 
+Level 0 [ ]: NumTables: 00. Size: 0 B of 0 B. Score: 0.00->0.00 StaleData: 0 B Target FileSize: 64 MiB
+Level 1 [ ]: NumTables: 00. Size: 0 B of 10 MiB. Score: 0.00->0.00 StaleData: 0 B Target FileSize: 2.0 MiB
+Level 2 [ ]: NumTables: 00. Size: 0 B of 10 MiB. Score: 0.00->0.00 StaleData: 0 B Target FileSize: 2.0 MiB
+Level 3 [ ]: NumTables: 00. Size: 0 B of 10 MiB. Score: 0.00->0.00 StaleData: 0 B Target FileSize: 2.0 MiB
+Level 4 [ ]: NumTables: 00. Size: 0 B of 10 MiB. Score: 0.00->0.00 StaleData: 0 B Target FileSize: 2.0 MiB
+Level 5 [B]: NumTables: 00. Size: 0 B of 24 MiB. Score: 0.00->0.00 StaleData: 0 B Target FileSize: 4.0 MiB
+Level 6 [ ]: NumTables: 129. Size: 245 MiB of 245 MiB. Score: 0.00->0.00 StaleData: 75 B Target FileSize: 8.0 MiB
+Level Done
+duration=5s, c=4 size=256
+leveldb/fsync batch write test inserted: 379000 entries; took: 5.041600114s s
+leveldb/fsync set rate: 197 op/s, mean: 1264779 ns, took: 5 s
+leveldb/fsync get rate: 2096628 op/s, mean: 119 ns, took: 5 s
+leveldb/fsync setmixed rate: 79 op/s, mean: 12566356 ns, took: 5 s
+leveldb/fsync getmixed rate: 2224995 op/s, mean: 112 ns, took: 5 s
+leveldb/fsync del rate: 123061 op/s, mean: 2031 ns, took: 5 s
