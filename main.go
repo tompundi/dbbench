@@ -12,6 +12,8 @@ import (
 	"sync"
 	"sync/atomic"
 	"time"
+
+	"github.com/smallnest/kvbench"
 )
 
 var (
@@ -307,57 +309,16 @@ func getStore(s string, fsync bool, path string) (kvbench.Store, string, error) 
 	switch s {
 	default:
 		err = fmt.Errorf("unknown store type: %v", s)
-	// case "map":
-	// 	if path == "" {
-	// 		path = "map.db"
-	// 	}
-	// 	store, err = kvbench.NewMapStore(path, fsync)
-	// case "btree":
-	// 	if path == "" {
-	// 		path = "btree.db"
-	// 	}
-	// 	store, err = kvbench.NewBTreeStore(path, fsync)
-	// case "bolt":
-	// 	if path == "" {
-	// 		path = "bolt.db"
-	// 	}
-	// 	store, err = kvbench.NewBoltStore(path, fsync)
-	// case "bbolt":
-	// 	if path == "" {
-	// 		path = "bbolt.db"
-	// 	}
-	// 	store, err = kvbench.NewBboltStore(path, fsync)
 	case "leveldb":
 		if path == "" {
 			path = "leveldb.db"
 		}
 		store, err = kvbench.NewLevelDBStore(path, fsync)
-	// case "kv":
-	// 	log.Warningf("kv store is unstable")
-	// 	if path == "" {
-	// 		path = "kv.db"
-	// 	}
-	// 	store, err = kvbench.NewKVStore(path, fsync)
 	case "badger":
 		if path == "" {
 			path = "badger.db"
 		}
 		store, err = kvbench.NewBadgerStore(path, fsync)
-		// case "buntdb":
-		// 	if path == "" {
-		// 		path = "buntdb.db"
-		// 	}
-		// 	store, err = kvbench.NewBuntdbStore(path, fsync)
-		// case "pogreb":
-		// 	if path == "" {
-		// 		path = "pogreb.db"
-		// 	}
-		// 	store, err = kvbench.NewPogrebStore(path, fsync)
-		// case "nutsdb":
-		// 	if path == "" {
-		// 		path = "nutsdb.db"
-		// 	}
-		// 	store, err = kvbench.NewNutsdbStore(path, fsync)
 	}
 
 	return store, path, err
