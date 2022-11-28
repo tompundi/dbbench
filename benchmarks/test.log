@@ -1,0 +1,4 @@
+main.go:16:2: found packages kvbench (badgerstore.go) and main (main.go) in /Users/pundix006/Desktop/GitHub/testTool
+main.go:16:2: found packages kvbench (badgerstore.go) and main (main.go) in /Users/pundix006/Desktop/GitHub/testTool
+main.go:16:2: found packages kvbench (badgerstore.go) and main (main.go) in /Users/pundix006/Desktop/GitHub/testTool
+main.go:16:2: found packages kvbench (badgerstore.go) and main (main.go) in /Users/pundix006/Desktop/GitHub/testTool

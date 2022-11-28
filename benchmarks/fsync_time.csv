@@ -1,0 +1,3 @@
+name,set,get,set-mixed,get-mixed,del
+badger/fsync,entries;,2816,932,112198,1126,1690
+leveldb/fsync,entries;,1572,292,19132,819,1822

@@ -1,0 +1,3 @@
+name,set,get,set-mixed,get-mixed,del
+badger/nofsync,test,88771,267994,8912,221883,147919
+leveldb/nofsync,test,158978,853776,52267,305097,137180
