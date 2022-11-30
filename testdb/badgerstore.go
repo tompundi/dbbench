@@ -11,13 +11,6 @@ type badgerStore struct {
 	db *badger.DB
 }
 
-func badgerKey(key []byte) []byte {
-	r := make([]byte, len(key)+1)
-	r[0] = 'k'
-	copy(r[1:], key)
-	return r
-}
-
 func NewBadgerStore(path string, fsync bool) (Store, error) {
 	opts := badger.DefaultOptions(path)
 	if path == ":memory:" {

@@ -5,38 +5,35 @@ import (
 	"encoding/binary"
 	"flag"
 	"fmt"
+	"github.com/tompundi/dbbench/testdb"
 	"math/rand"
 	"os"
 	"runtime"
-	"strings"
 	"sync"
 	"sync/atomic"
 	"time"
-
-	tdb "github.com/tompundi/testdb/testdb"
+	"unsafe"
 )
 
 var (
 	duration = flag.Duration("d", time.Minute, "test duration for each case")
 	c        = flag.Int("c", runtime.NumCPU(), "concurrent goroutines")
-	size     = flag.Int("size", 256, "data size")
+	keysize  = flag.Int64("keysize", 8, "key size")
+	valsize  = flag.Int64("valsize", 256, "value size")
+	txnum    = flag.Int64("txnum", 1000000, "tx number")
+	fix      = flag.Bool("fix", true, "fix")
 	fsync    = flag.Bool("fsync", false, "fsync")
-	s        = flag.String("s", "map", "store type")
-	data     = make([]byte, *size)
+	s        = flag.String("s", "badger", "store type")
+	data     = make([]byte, *valsize)
 )
 
 func main() {
 
 	flag.Parse()
-	fmt.Printf("duration=%v, c=%d size=%d\n", *duration, *c, *size)
+	fmt.Printf("duration=%v, c=%d size=%d\n", *duration, *c, *valsize)
 
 	var memory bool
 	var path string
-	if strings.HasSuffix(*s, "/memory") {
-		memory = true
-		path = ":memory:"
-		*s = strings.TrimSuffix(*s, "/memory")
-	}
 
 	store, path, err := getStore(*s, *fsync, path)
 	if err != nil {
@@ -48,46 +45,52 @@ func main() {
 
 	defer store.Close()
 	name := *s
-	if memory {
-		name = name + "/memory"
-	}
 	if *fsync {
 		name = name + "/fsync"
 	} else {
 		name = name + "/nofsync"
 	}
 
-	testBatchWrite(name, store)
-	testSet(name, store)
-	testGet(name, store)
-	testGetSet(name, store)
+	//testBatchWrite(name, store)
+	//testSet(name, store)
+	//testGet(name, store)
+	//testGetSet(name, store)
 	testDelete(name, store)
 }
 
-// test batch writes
-func testBatchWrite(name string, store tdb.Store) {
+func testBatchWrite(name string, store testdb.Store) {
 	var wg sync.WaitGroup
 	start := time.Now()
 	ctx, cancel := context.WithTimeout(context.Background(), *duration)
 	defer cancel()
 
-	var total uint64
-	for i := 0; i < *c; i++ {
+	var totalEntries uint64
+	var totalSize uint64
+	for j := 0; j < *c; j++ {
 		wg.Add(1)
 		go func(proc int) {
 			batchSize := uint64(1000)
 			var keyList, valList [][]byte
+
 			for i := uint64(0); i < batchSize; i++ {
 				keyList = append(keyList, genKey(i))
-				valList = append(valList, make([]byte, *size))
+				valList = append(valList, make([]byte, *valsize))
 			}
+			addKeySize := (uint64(unsafe.Sizeof(keyList[0]))+uint64(unsafe.Sizeof(keyList[0][0]))*uint64(*keysize))*batchSize + uint64(unsafe.Sizeof(keyList))
+			addValSize := (uint64(unsafe.Sizeof(valList[0]))+uint64(unsafe.Sizeof(valList[0][0]))*uint64(*valsize))*batchSize + uint64(unsafe.Sizeof(valList))
+			addSize := addKeySize + addValSize
+
 		LOOP:
 			for {
 				select {
 				case <-ctx.Done():
 					break LOOP
 				default:
-					// Fill random keys and values.
+					if *fix == true && totalEntries >= uint64(*txnum) {
+						fmt.Printf("total is %d !\n", totalEntries)
+						fmt.Printf("exceed txnum!\n")
+						break LOOP
+					}
 					for i := range keyList {
 						rand.Read(keyList[i])
 						rand.Read(valList[i])
@@ -96,30 +99,75 @@ func testBatchWrite(name string, store tdb.Store) {
 					if err != nil {
 						panic(err)
 					}
-					atomic.AddUint64(&total, uint64(len(keyList)))
+					atomic.AddUint64(&totalEntries, uint64(len(keyList)))
+					atomic.AddUint64(&totalSize, addSize)
 				}
 			}
 			wg.Done()
-		}(i)
+		}(j)
 	}
 	wg.Wait()
-	fmt.Printf("%s batch write test inserted: %d entries; took: %s s\n", name, total, time.Since(start))
+	diffTimes := float64(totalEntries) / float64(*txnum)
+	if diffTimes == 0 {
+		diffTimes = 1
+	}
+	seconds := float64(time.Since(start).Seconds())
+	sizeMB := float64(totalSize) / 1e6
+	fmt.Printf("%s batch-write size: %.2f MB; took: %.2f s for total %d entries\n", name, sizeMB, seconds, totalEntries)
+	fmt.Printf("%s batch-write size: %.2f MB; took: %.2f s for total %d entries\n", name, sizeMB/diffTimes, seconds/diffTimes, *txnum)
 }
 
-// test get
-func testGet(name string, store tdb.Store) {
+func testSet(name string, store testdb.Store) {
 	var wg sync.WaitGroup
 	wg.Add(*c)
 
 	ctx, cancel := context.WithTimeout(context.Background(), *duration)
 	defer cancel()
 
-	counts := make([]int, *c)
+	var totalCount int64
+	start := time.Now()
+	for j := 0; j < *c; j++ {
+		go func() {
+			i := uint64(j)
+		LOOP:
+			for {
+				select {
+				case <-ctx.Done():
+					break LOOP
+				default:
+					if *fix == true && totalCount >= *txnum {
+						fmt.Printf("totalCount is %d !\n", totalCount)
+						fmt.Printf("exceed txnum!\n")
+						break LOOP
+					}
+					store.Set(genKey(i), data)
+					i += uint64(*c)
+					totalCount++
+				}
+			}
+			wg.Done()
+		}()
+	}
+	wg.Wait()
+	dur := time.Since(start)
+	ops := float64(totalCount) / (float64(dur) / 1e9)
+	ns := float64(dur) / float64(totalCount*int64(*c))
+	fmt.Printf("float64(dur) is %.2f\n", float64(dur))
+	fmt.Printf("%s set rate: %.2f op/s, mean: %.2f ns, took: %d s\n", name, ops, ns, int(dur.Seconds()))
+	fmt.Printf("%s set rate: %.2f op/s, for: %d tx, took: %.2f s\n", name, ops, *txnum, float64(*txnum)/ops)
+}
+
+func testGet(name string, store testdb.Store) {
+	var wg sync.WaitGroup
+	wg.Add(*c)
+
+	ctx, cancel := context.WithTimeout(context.Background(), *duration)
+	defer cancel()
+	var totalCount int64
 	start := time.Now()
 	for j := 0; j < *c; j++ {
 		index := uint64(j)
 		go func() {
-			var count int
 			i := index
 		LOOP:
 			for {
@@ -127,30 +175,32 @@ func testGet(name string, store tdb.Store) {
 				case <-ctx.Done():
 					break LOOP
 				default:
+					if *fix == true && totalCount >= *txnum {
+						fmt.Printf("totalCount is %d !\n", totalCount)
+						fmt.Printf("exceed txnum!\n")
+						break LOOP
+					}
 					_, ok, _ := store.Get(genKey(i))
 					if !ok {
 						i = index
 					}
 					i += uint64(*c)
-					count++
+					totalCount++
 				}
 			}
-			counts[index] = count
 			wg.Done()
 		}()
 	}
 	wg.Wait()
 	dur := time.Since(start)
-	d := int64(dur)
-	var n int
-	for _, count := range counts {
-		n += count
-	}
-	fmt.Printf("%s get rate: %d op/s, mean: %d ns, took: %d s\n", name, int64(n)*1e6/(d/1e3), d/int64((n)*(*c)), int(dur.Seconds()))
+	ops := float64(totalCount) / (float64(dur) / 1e9)
+	ns := float64(dur) / float64(totalCount*int64(*c))
+	fmt.Printf("%s get rate: %.2f op/s, mean: %.2f ns, took: %d s\n", name, ops, ns, int(dur.Seconds()))
+	fmt.Printf("%s get rate: %.2f op/s, for: %d tx, took: %.2f s\n", name, ops, *txnum, float64(*txnum)/ops)
 }
 
 // test multiple get/one set
-func testGetSet(name string, store tdb.Store) {
+func testGetSet(name string, store testdb.Store) {
 	var wg sync.WaitGroup
 	wg.Add(*c)
 
@@ -212,24 +262,23 @@ func testGetSet(name string, store tdb.Store) {
 	if setCount == 0 {
 		fmt.Printf("%s setmixed rate: -1 op/s, mean: -1 ns, took: %d s\n", name, int(dur.Seconds()))
 	} else {
-		fmt.Printf("%s setmixed rate: %d op/s, mean: %d ns, took: %d s\n", name, int64(setCount)*1e6/(d/1e3), d/int64(setCount), int(dur.Seconds()))
+		fmt.Printf("%s setmixed rate: %d op/s, mean: %d ns, took: %d s\n", name, int64(setCount)/(d/1e9), d/int64(setCount), int(dur.Seconds()))
 	}
-	fmt.Printf("%s getmixed rate: %d op/s, mean: %d ns, took: %d s\n", name, int64(n)*1e6/(d/1e3), d/int64((n)*(*c)), int(dur.Seconds()))
+	fmt.Printf("%s getmixed rate: %d op/s, mean: %d ns, took: %d s\n", name, int64(n)/(d/1e9), d/int64((n)*(*c)), int(dur.Seconds()))
 }
 
-func testSet(name string, store tdb.Store) {
+func testDelete(name string, store testdb.Store) {
 	var wg sync.WaitGroup
 	wg.Add(*c)
 
 	ctx, cancel := context.WithTimeout(context.Background(), *duration)
 	defer cancel()
 
-	counts := make([]int, *c)
+	var totalCount int64
 	start := time.Now()
 	for j := 0; j < *c; j++ {
 		index := uint64(j)
 		go func() {
-			count := 0
 			i := index
 		LOOP:
 			for {
@@ -237,74 +286,37 @@ func testSet(name string, store tdb.Store) {
 				case <-ctx.Done():
 					break LOOP
 				default:
-					store.Set(genKey(i), data)
-					i += uint64(*c)
-					count++
-				}
-			}
-			counts[index] = count
-			wg.Done()
-		}()
-	}
-	wg.Wait()
-	dur := time.Since(start)
-	d := int64(dur)
-	var n int
-	for _, count := range counts {
-		n += count
-	}
-	fmt.Printf("%s set rate: %d op/s, mean: %d ns, took: %d s\n", name, int64(n)*1e6/(d/1e3), d/int64((n)*(*c)), int(dur.Seconds()))
-}
-
-func testDelete(name string, store tdb.Store) {
-	var wg sync.WaitGroup
-	wg.Add(*c)
-
-	ctx, cancel := context.WithTimeout(context.Background(), *duration)
-	defer cancel()
-
-	counts := make([]int, *c)
-	start := time.Now()
-	for j := 0; j < *c; j++ {
-		index := uint64(j)
-		go func() {
-			var count int
-			i := index
-		LOOP:
-			for {
-				select {
-				case <-ctx.Done():
-					break LOOP
-				default:
+					if *fix == true && totalCount >= *txnum {
+						fmt.Printf("totalCount is %d !\n", totalCount)
+						fmt.Printf("exceed txnum!\n")
+						break LOOP
+					}
 					store.Del(genKey(i))
 					i += uint64(*c)
-					count++
+					totalCount++
 				}
 			}
-			counts[index] = count
 			wg.Done()
 		}()
 	}
 	wg.Wait()
 	dur := time.Since(start)
-	d := int64(dur)
-	var n int
-	for _, count := range counts {
-		n += count
-	}
-
-	fmt.Printf("%s del rate: %d op/s, mean: %d ns, took: %d s\n", name, int64(n)*1e6/(d/1e3), d/int64((n)*(*c)), int(dur.Seconds()))
+	ops := float64(totalCount) / (float64(dur) / 1e9)
+	ns := float64(dur) / float64(totalCount*int64(*c))
+	fmt.Printf("%s del rate: %.2f op/s, mean: %.2f ns, took: %d s\n", name, ops, ns, int(dur.Seconds()))
+	fmt.Printf("%s del rate: %.2f op/s, for: %d tx, took: %.2f s\n", name, ops, *txnum, float64(*txnum)/ops)
 }
 
 func genKey(i uint64) []byte {
-	r := make([]byte, 9)
+	r := make([]byte, *keysize)
 	r[0] = 'k'
+	//binary.BigEndian.PutUint64(r[0:], i)
 	binary.BigEndian.PutUint64(r[1:], i)
 	return r
 }
 
-func getStore(s string, fsync bool, path string) (tdb.Store, string, error) {
-	var store tdb.Store
+func getStore(s string, fsync bool, path string) (testdb.Store, string, error) {
+	var store testdb.Store
 	var err error
 	switch s {
 	default:
@@ -313,12 +325,13 @@ func getStore(s string, fsync bool, path string) (tdb.Store, string, error) {
 		if path == "" {
 			path = "leveldb.db"
 		}
-		store, err = tdb.NewLevelDBStore(path, fsync)
+		store, err = testdb.NewLevelDBStore(path, fsync)
+
 	case "badger":
 		if path == "" {
 			path = "badger.db"
 		}
-		store, err = tdb.NewBadgerStore(path, fsync)
+		store, err = testdb.NewBadgerStore(path, fsync)
 	}
 
 	return store, path, err

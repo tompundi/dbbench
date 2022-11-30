@@ -1,3 +1,0 @@
-name,set,get,set-mixed,get-mixed,del
-badger/nofsync,entries;,2079,487,47882,729,1683
-leveldb/nofsync,entries;,3337,371,30523,919,765
