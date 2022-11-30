@@ -111,8 +111,8 @@ func testBatchWrite(name string, store testdb.Store) {
 	}
 	seconds := float64(time.Since(start).Seconds())
 	sizeMB := float64(totalSize) / 1e6
-	fmt.Printf("%s batch-write size: %.2f MB; took: %.2f s for total %d entries\n", name, sizeMB, seconds, totalEntries)
-	fmt.Printf("%s batch-write size: %.2f MB; took: %.2f s for total %d entries\n", name, sizeMB/diffTimes, seconds/diffTimes, *txnum)
+	fmt.Printf("%s batch-write size: %.2f MB; for total %d entries, took: %.2f s \n", name, sizeMB, totalEntries, seconds)
+	fmt.Printf("%s batch-write size: %.2f MB; for total %d entries, took: %.2f s \n", name, sizeMB/diffTimes, *txnum, seconds/diffTimes)
 }
 
 func testSet(name string, store testdb.Store) {

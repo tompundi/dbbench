@@ -1,9 +1,8 @@
 package testdb
 
 import (
-	"sync"
-
 	"github.com/dgraph-io/badger/v3"
+	"sync"
 )
 
 type badgerStore struct {

@@ -15,7 +15,7 @@ rm -f test.log
 echo "=========== test nofsync ==========="
 for i in "${STORES[@]}"
 do
-	go run main.go -d=10s -keysize=${KEYSIZE} -valsize=${VALSIZE} -txnum=${TXNUM} -fix=${FIXTIME} -s "$i" >> test.log 2>&1
+	go run main.go -d=1m -keysize=${KEYSIZE} -valsize=${VALSIZE} -txnum=${TXNUM} -fix=${FIXTIME} -s "$i" >> test.log 2>&1
 done
 
 rm  -fr .*db
@@ -27,5 +27,5 @@ echo "=========== test fsync ==========="
 
 for i in "${STORES[@]}"
 do
-	go run main.go -d=10s -keysize=${KEYSIZE} -valsize=${VALSIZE} -txnum=${TXNUM} -fix=${FIXTIME} -s "$i" -fsync >> test.log 2>&1
+	go run main.go -d=1m -keysize=${KEYSIZE} -valsize=${VALSIZE} -txnum=${TXNUM} -fix=${FIXTIME} -s "$i" -fsync >> test.log 2>&1
 done
