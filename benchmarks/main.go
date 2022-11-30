@@ -51,10 +51,10 @@ func main() {
 		name = name + "/nofsync"
 	}
 
-	//testBatchWrite(name, store)
-	//testSet(name, store)
-	//testGet(name, store)
-	//testGetSet(name, store)
+	testBatchWrite(name, store)
+	testSet(name, store)
+	testGet(name, store)
+	testGetSet(name, store)
 	testDelete(name, store)
 }
 
@@ -87,8 +87,6 @@ func testBatchWrite(name string, store testdb.Store) {
 					break LOOP
 				default:
 					if *fix == true && totalEntries >= uint64(*txnum) {
-						fmt.Printf("total is %d !\n", totalEntries)
-						fmt.Printf("exceed txnum!\n")
 						break LOOP
 					}
 					for i := range keyList {
@@ -136,8 +134,6 @@ func testSet(name string, store testdb.Store) {
 					break LOOP
 				default:
 					if *fix == true && totalCount >= *txnum {
-						fmt.Printf("totalCount is %d !\n", totalCount)
-						fmt.Printf("exceed txnum!\n")
 						break LOOP
 					}
 					store.Set(genKey(i), data)
@@ -152,7 +148,6 @@ func testSet(name string, store testdb.Store) {
 	dur := time.Since(start)
 	ops := float64(totalCount) / (float64(dur) / 1e9)
 	ns := float64(dur) / float64(totalCount*int64(*c))
-	fmt.Printf("float64(dur) is %.2f\n", float64(dur))
 	fmt.Printf("%s set rate: %.2f op/s, mean: %.2f ns, took: %d s\n", name, ops, ns, int(dur.Seconds()))
 	fmt.Printf("%s set rate: %.2f op/s, for: %d tx, took: %.2f s\n", name, ops, *txnum, float64(*txnum)/ops)
 }
@@ -176,8 +171,6 @@ func testGet(name string, store testdb.Store) {
 					break LOOP
 				default:
 					if *fix == true && totalCount >= *txnum {
-						fmt.Printf("totalCount is %d !\n", totalCount)
-						fmt.Printf("exceed txnum!\n")
 						break LOOP
 					}
 					_, ok, _ := store.Get(genKey(i))
@@ -199,25 +192,21 @@ func testGet(name string, store testdb.Store) {
 	fmt.Printf("%s get rate: %.2f op/s, for: %d tx, took: %.2f s\n", name, ops, *txnum, float64(*txnum)/ops)
 }
 
-// test multiple get/one set
 func testGetSet(name string, store testdb.Store) {
 	var wg sync.WaitGroup
 	wg.Add(*c)
 
 	ch := make(chan struct{})
-
-	var setCount uint64
-
+	var totalCount int64
+	setCount := uint64(0)
 	go func() {
-		i := uint64(0)
 		for {
 			select {
 			case <-ch:
 				return
 			default:
-				store.Set(genKey(i), data)
+				store.Set(genKey(setCount), data)
 				setCount++
-				i++
 			}
 		}
 	}()
@@ -225,12 +214,11 @@ func testGetSet(name string, store testdb.Store) {
 	ctx, cancel := context.WithTimeout(context.Background(), *duration)
 	defer cancel()
 
-	counts := make([]int, *c)
+	totalCount += int64(setCount)
 	start := time.Now()
 	for j := 0; j < *c; j++ {
 		index := uint64(j)
 		go func() {
-			var count int
 			i := index
 		LOOP:
 			for {
@@ -238,33 +226,33 @@ func testGetSet(name string, store testdb.Store) {
 				case <-ctx.Done():
 					break LOOP
 				default:
+					if *fix == true && totalCount >= *txnum {
+						break LOOP
+					}
 					_, ok, _ := store.Get(genKey(i))
 					if !ok {
 						i = index
 					}
 					i += uint64(*c)
-					count++
+					totalCount++
 				}
 			}
-			counts[index] = count
 			wg.Done()
 		}()
 	}
 	wg.Wait()
 	close(ch)
 	dur := time.Since(start)
-	d := int64(dur)
-	var n int
-	for _, count := range counts {
-		n += count
-	}
+	ops := float64(totalCount) / (float64(dur) / 1e9)
+	ns := float64(dur) / float64(totalCount*int64(*c))
 
 	if setCount == 0 {
 		fmt.Printf("%s setmixed rate: -1 op/s, mean: -1 ns, took: %d s\n", name, int(dur.Seconds()))
 	} else {
-		fmt.Printf("%s setmixed rate: %d op/s, mean: %d ns, took: %d s\n", name, int64(setCount)/(d/1e9), d/int64(setCount), int(dur.Seconds()))
+		fmt.Printf("%s setmixed rate: %.2f op/s, mean: %.2f ns, took: %d s\n", name, float64(setCount)/(float64(dur)/1e9), float64(dur)/float64(setCount), int(dur.Seconds()))
 	}
-	fmt.Printf("%s getmixed rate: %d op/s, mean: %d ns, took: %d s\n", name, int64(n)/(d/1e9), d/int64((n)*(*c)), int(dur.Seconds()))
+	fmt.Printf("%s getmixed rate: %.2f op/s, mean: %.2f ns, took: %d s\n", name, ops, ns, int(dur.Seconds()))
+	fmt.Printf("%s getmixed rate: %.2f op/s, for: %d tx, took: %.2f s\n", name, ops, *txnum, float64(*txnum)/ops)
 }
 
 func testDelete(name string, store testdb.Store) {
@@ -287,8 +275,6 @@ func testDelete(name string, store testdb.Store) {
 					break LOOP
 				default:
 					if *fix == true && totalCount >= *txnum {
-						fmt.Printf("totalCount is %d !\n", totalCount)
-						fmt.Printf("exceed txnum!\n")
 						break LOOP
 					}
 					store.Del(genKey(i))
@@ -326,7 +312,6 @@ func getStore(s string, fsync bool, path string) (testdb.Store, string, error) {
 			path = "leveldb.db"
 		}
 		store, err = testdb.NewLevelDBStore(path, fsync)
-
 	case "badger":
 		if path == "" {
 			path = "badger.db"
