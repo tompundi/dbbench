@@ -11,3 +11,4 @@ report:
 clean:
 	rm  -fr .*db && rm  -fr *.db && rm  -fr pogreb.*
 
+.PHONY: clean test report mod
